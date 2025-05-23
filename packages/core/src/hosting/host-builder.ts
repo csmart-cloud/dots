@@ -21,6 +21,7 @@ import {
   HonoHttpRequestAdapter,
   HonoHttpResponseAdapter,
 } from "./hono-adapters.js";
+import type { ControllerBase } from "../mvc/controller-base.js";
 
 export interface IHostBuilder {
   configureServices(
@@ -36,6 +37,7 @@ export interface IHostBuilder {
   useStartup<TStartup extends IStartup>(
     startupClass: Constructor<TStartup>
   ): IHostBuilder;
+  withStartupValidation(enabled: boolean): IHostBuilder;
 }
 
 export class DefaultHostBuilder implements IHostBuilder {
@@ -46,6 +48,7 @@ export class DefaultHostBuilder implements IHostBuilder {
     hostServices: IServiceProvider
   ) => void)[] = [];
   private startupInstance?: IStartup;
+  private startupValidationEnabled: boolean = true; // Thêm cờ cho validation. Mặc định là bật
 
   constructor() {}
 
@@ -56,6 +59,11 @@ export class DefaultHostBuilder implements IHostBuilder {
     if (this.startupInstance.configureServices) {
       this.startupInstance.configureServices(this.serviceCollection);
     }
+    return this;
+  }
+
+  withStartupValidation(enabled: boolean): IHostBuilder {
+    this.startupValidationEnabled = enabled;
     return this;
   }
 
@@ -82,12 +90,46 @@ export class DefaultHostBuilder implements IHostBuilder {
     );
     const appBuilder = new DefaultApplicationBuilder(rootServiceProvider);
 
+    let controllersToValidate: Constructor<ControllerBase>[] = [];
+
     if (this.startupInstance && this.startupInstance.configure) {
-      this.startupInstance.configure(appBuilder, rootServiceProvider);
+      const result = this.startupInstance.configure(appBuilder, rootServiceProvider);
+      if (Array.isArray(result)) {
+        controllersToValidate = result;
+      }
     }
     this.configureAppDelegates.forEach((delegate) =>
       delegate(appBuilder, rootServiceProvider)
     );
+
+    if (this.startupValidationEnabled && controllersToValidate.length > 0) {
+      console.log("Performing startup DI validation...");
+      try {
+        // Tạo một scope tạm thời để resolve các service scoped (như controllers)
+        const validationScope = rootServiceProvider.createScope();
+        controllersToValidate.forEach((controller) => {
+          console.log(`  - Validating controller: ${controller.name}`);
+          const instance = validationScope.getService(controller);
+          if (!instance) {
+            // Mặc dù getService sẽ ném lỗi trước đó, đây là một bước kiểm tra dự phòng
+            throw new Error(
+              `Failed to resolve controller "${controller.name}". It might not be registered correctly.`
+            );
+          }
+        });
+        console.log(
+          "DI validation successful. All controllers and their dependencies can be resolved."
+        );
+      } catch (error) {
+        console.error("DI validation failed. Application will not start.");
+        // Ném lỗi ra ngoài để dừng hoàn toàn quá trình khởi động
+        throw error;
+      }
+    } else if (this.startupValidationEnabled) {
+      console.warn(
+        "Startup DI validation is enabled, but no controllers were provided for validation from Startup.configure()."
+      );
+    }
 
     const coreRequestHandler = appBuilder.build();
     const honoApp = new Hono();
@@ -117,10 +159,10 @@ export class DefaultHostBuilder implements IHostBuilder {
           // Không cần làm gì thêm ở đây.
         }
       } catch (error) {
-        console.error("Unhandled error in CoreTSApiFramework pipeline:", error);
+        console.error("Unhandled error in pipeline:", error);
         if (!httpContext.response.isSent) {
           c.status(500);
-          return c.text("Internal Server Error from CoreTSApiFramework Host");
+          return c.text("Internal Server Error from Host");
         }
       }
       // Trả về c.res để Hono biết response đã được xử lý
@@ -132,21 +174,19 @@ export class DefaultHostBuilder implements IHostBuilder {
     const nodeHttpHost: IHost = {
       services: rootServiceProvider,
       start: async () => {
-        const port = Number(process.env.PORT) || 3000;
+        const port = Number(process.env.PORT) || 5000;
         serverInstance = serve(
           {
             fetch: honoApp.fetch,
             port: port,
           },
           (info) => {
-            console.log(
-              `CoreTSApiFramework Host (Hono) is running on http://localhost:${info.port}`
-            );
+            console.log(`Host is running on http://localhost:${info.port}`);
           }
         );
       },
       stop: async () => {
-        console.log("CoreTSApiFramework Host (Hono) is stopping...");
+        console.log("Host is stopping...");
         if (
           serverInstance &&
           typeof (serverInstance as any).close === "function"

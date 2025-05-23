@@ -8,8 +8,9 @@ import type { IServiceProvider } from "./service-provider.js";
  */
 export interface IServiceCollection {
   add(descriptor: ServiceDescriptor): void;
+
+  // Overloads cho addTransient
   addTransient<TService>(
-    serviceType: Constructor<TService> | symbol | string,
     implementationType: Constructor<TService>
   ): IServiceCollection;
   addTransient<TService, TImplementation extends TService>(
@@ -17,8 +18,8 @@ export interface IServiceCollection {
     implementationType: Constructor<TImplementation>
   ): IServiceCollection;
 
+  // Overloads cho addScoped
   addScoped<TService>(
-    serviceType: Constructor<TService> | symbol | string,
     implementationType: Constructor<TService>
   ): IServiceCollection;
   addScoped<TService, TImplementation extends TService>(
@@ -26,8 +27,8 @@ export interface IServiceCollection {
     implementationType: Constructor<TImplementation>
   ): IServiceCollection;
 
+  // Overloads cho addSingleton
   addSingleton<TService>(
-    serviceType: Constructor<TService> | symbol | string,
     implementationType: Constructor<TService>
   ): IServiceCollection;
   addSingleton<TService, TImplementation extends TService>(
@@ -54,27 +55,57 @@ export class DefaultServiceCollection implements IServiceCollection {
     this.descriptors.push(descriptor);
   }
 
+  // Triển khai logic cho overloads
   addTransient<TService, TImplementation extends TService>(
-    serviceType: Constructor<TService> | symbol | string,
-    implementationType: Constructor<TImplementation>
+    serviceOrImplementation: Constructor<TService> | symbol | string,
+    implementationType?: Constructor<TImplementation>
   ): IServiceCollection {
-    this.add(ServiceDescriptor.transient(serviceType, implementationType));
+    if (implementationType) {
+      // Version 2 tham số: services.addTransient(IToken, ServiceImpl)
+      this.add(
+        ServiceDescriptor.transient(serviceOrImplementation, implementationType)
+      );
+    } else {
+      // Version 1 tham số: services.addTransient(ServiceImpl)
+      const implementation = serviceOrImplementation as Constructor<TService>;
+      this.add(ServiceDescriptor.transient(implementation, implementation));
+    }
     return this;
   }
 
+  // SỬA ĐỔI: Triển khai logic cho overloads
   addScoped<TService, TImplementation extends TService>(
-    serviceType: Constructor<TService> | symbol | string,
-    implementationType: Constructor<TImplementation>
+    serviceOrImplementation: Constructor<TService> | symbol | string,
+    implementationType?: Constructor<TImplementation>
   ): IServiceCollection {
-    this.add(ServiceDescriptor.scoped(serviceType, implementationType));
+    if (implementationType) {
+      // Version 2 tham số: services.addScoped(IToken, ServiceImpl)
+      this.add(
+        ServiceDescriptor.scoped(serviceOrImplementation, implementationType)
+      );
+    } else {
+      // Version 1 tham số: services.addScoped(ServiceImpl)
+      const implementation = serviceOrImplementation as Constructor<TService>;
+      this.add(ServiceDescriptor.scoped(implementation, implementation));
+    }
     return this;
   }
 
+  // SỬA ĐỔI: Triển khai logic cho overloads
   addSingleton<TService, TImplementation extends TService>(
-    serviceType: Constructor<TService> | symbol | string,
-    implementationType: Constructor<TImplementation>
+    serviceOrImplementation: Constructor<TService> | symbol | string,
+    implementationType?: Constructor<TImplementation>
   ): IServiceCollection {
-    this.add(ServiceDescriptor.singleton(serviceType, implementationType));
+    if (implementationType) {
+      // Version 2 tham số: services.addSingleton(IToken, ServiceImpl)
+      this.add(
+        ServiceDescriptor.singleton(serviceOrImplementation, implementationType)
+      );
+    } else {
+      // Version 1 tham số: services.addSingleton(ServiceImpl)
+      const implementation = serviceOrImplementation as Constructor<TService>;
+      this.add(ServiceDescriptor.singleton(implementation, implementation));
+    }
     return this;
   }
 

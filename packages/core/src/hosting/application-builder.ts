@@ -296,7 +296,7 @@ export class DefaultApplicationBuilder implements IApplicationBuilder {
       if (!_context.response.isSent) {
         _context.response.statusCode = 404;
         await _context.response.send(
-          "Not Found by CoreTSApiFramework fallback."
+          "Not Found fallback."
         );
       }
     };

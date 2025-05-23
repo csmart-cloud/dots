@@ -6,7 +6,7 @@ import {
 
 @Controller("api/identity")
 export class IdentityController extends ControllerBase {
-  constructor(private identityService: IdentityService) {
+  constructor(@Inject(IdentityService) private identityService: IdentityService) {
     super();
   }
 

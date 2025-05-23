@@ -16,6 +16,10 @@ import {
 export abstract class ControllerBase {
   private _httpContext?: IHttpContext;
 
+  constructor() {
+    console.log("ControllerBase: Constructor called");
+  }
+
   // Property để framework inject HttpContext
   public get httpContext(): IHttpContext | undefined {
     return this._httpContext;
