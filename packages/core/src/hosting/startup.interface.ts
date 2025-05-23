@@ -1,6 +1,6 @@
-import { IServiceCollection } from "../di/service-collection";
-import { IApplicationBuilder } from "./application-builder";
-import { IServiceProvider } from "../di/service-provider";
+import type { IServiceCollection } from "../di/service-collection.js";
+import type { IApplicationBuilder } from "./application-builder.js";
+import type { IServiceProvider } from "../di/service-provider.js";
 
 export interface IStartup {
   configureServices(services: IServiceCollection): void;

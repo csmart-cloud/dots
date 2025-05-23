@@ -1,6 +1,6 @@
-import { IHttpContext } from "../http/http-context";
-import { HttpMethod } from "../http/http-method";
-import { Constructor } from "../common/types";
+import { HttpMethod } from "../http/http-method.js";
+import type { IHttpContext } from "../http/http-context.js";
+import type { Constructor } from "../common/types.js";
 
 export interface IRouteHandler {
   (context: IHttpContext): Promise<any> | any;

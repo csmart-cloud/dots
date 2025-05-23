@@ -1,4 +1,4 @@
-import { IHttpContext } from "../http/http-context";
+import { type IHttpContext } from "../http/http-context.js";
 
 export interface IActionResult {
   executeResult(context: IHttpContext): Promise<void> | void;

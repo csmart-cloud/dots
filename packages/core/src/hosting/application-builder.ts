@@ -1,18 +1,18 @@
-import { IHttpContext } from "../http/http-context";
-import { Middleware } from "../common/types";
-import { IServiceProvider } from "../di/service-provider";
-import { RouteData } from "../routing/routing-interfaces";
+import { ControllerBase } from "../mvc/controller-base.js";
+import { HttpMethod } from "../http/http-method.js";
 import {
-  ActionRouteMetadata,
   ACTION_ROUTES_METADATA,
   PARAM_BINDING_METADATA_KEY_PREFIX,
-  ParameterBindingMetadata,
   ROUTE_PREFIX_METADATA,
-} from "../routing/decorators";
-import { HttpMethod } from "../http/http-method";
-import { IActionResult } from "../mvc/action-results";
-import { Constructor } from "../common/types";
-import { ControllerBase } from "../mvc/controller-base";
+  type ActionRouteMetadata,
+  type ParameterBindingMetadata,
+} from "../routing/decorators.js";
+import type { IHttpContext } from "../http/http-context.js";
+import type { Middleware } from "../common/types.js";
+import type { IServiceProvider } from "../di/service-provider.js";
+import type { RouteData } from "../routing/routing-interfaces.js";
+import type { IActionResult } from "../mvc/action-results.js";
+import type { Constructor } from "../common/types.js";
 
 export interface IApplicationBuilder {
   use(middleware: Middleware): IApplicationBuilder;

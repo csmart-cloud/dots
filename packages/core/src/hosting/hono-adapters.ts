@@ -1,7 +1,7 @@
-import { Context as HonoContext } from "hono";
-import { IHttpRequest } from "../http/http-request";
-import { IHttpResponse } from "../http/http-response";
-import { HttpMethod } from "../http/http-method";
+import { HttpMethod } from "../http/http-method.js";
+import type { Context as HonoContext } from "hono";
+import type { IHttpRequest } from "../http/http-request.js";
+import type { IHttpResponse } from "../http/http-response.js";
 
 export class HonoHttpRequestAdapter implements IHttpRequest {
   public body?: any;

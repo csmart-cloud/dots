@@ -1,4 +1,4 @@
-import { HttpMethod } from "./http-method";
+import { HttpMethod } from "./http-method.js";
 
 export interface IHttpRequest {
   body?: any; // Body có thể đã được parse

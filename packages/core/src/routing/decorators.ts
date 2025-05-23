@@ -1,6 +1,6 @@
 import "reflect-metadata";
 import { HttpMethod } from "../http/http-method.js";
-import { Constructor } from "../common/types.js";
+import type { Constructor } from "../common/types.js";
 
 export const ROUTE_PREFIX_METADATA = Symbol("RoutePrefix");
 export const ACTION_ROUTES_METADATA = Symbol("ActionRoutes");

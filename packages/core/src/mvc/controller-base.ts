@@ -1,6 +1,5 @@
 // Một lớp cơ sở tùy chọn cho controllers, cung cấp các helper methods.
-// Tương tự ControllerBase trong ASP.NET Core.
-import { IHttpContext } from "../http/http-context";
+import type { IHttpContext } from "../http/http-context.js";
 import {
   OkObjectResult,
   NotFoundResult,
@@ -12,7 +11,7 @@ import {
   BadRequestResult,
   RedirectResult,
   HtmlResult,
-} from "./action-results";
+} from "./action-results.js";
 
 export abstract class ControllerBase {
   private _httpContext?: IHttpContext;

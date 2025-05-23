@@ -1,26 +1,26 @@
+import { serve } from "@hono/node-server";
+import { Hono, type Context as HonoContext } from "hono";
 import {
-  IServiceCollection,
+  type IServiceCollection,
   DefaultServiceCollection,
-} from "../di/service-collection";
-import { IHost } from "./host";
+} from "../di/service-collection.js";
+import type { IHost } from "./host.js";
 import {
-  IApplicationBuilder,
+  type IApplicationBuilder,
   DefaultApplicationBuilder,
-} from "./application-builder";
-import { IHttpContext } from "../http/http-context";
+} from "./application-builder.js";
+import type { IHttpContext } from "../http/http-context.js";
 import {
   DefaultServiceProvider,
-  IServiceProvider,
-} from "../di/service-provider";
-import { Constructor } from "../common/types";
-import { IStartup } from "./startup.interface";
+  type IServiceProvider,
+} from "../di/service-provider.js";
+import type { Constructor } from "../common/types.js";
+import type { IStartup } from "./startup.interface.js";
 
-import { Hono, Context as HonoContext } from "hono";
-import { serve } from "@hono/node-server";
 import {
   HonoHttpRequestAdapter,
   HonoHttpResponseAdapter,
-} from "./hono-adapters";
+} from "./hono-adapters.js";
 
 export interface IHostBuilder {
   configureServices(

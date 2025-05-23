@@ -1,8 +1,8 @@
 import "reflect-metadata";
-import { ServiceDescriptor } from "./service-descriptor";
-import { ServiceLifetime } from "./service-lifetime";
-import { Constructor } from "../common/types";
-import { INJECT_PARAMS_METADATA } from "./decorators";
+import { ServiceDescriptor } from "./service-descriptor.js";
+import { ServiceLifetime } from "./service-lifetime.js";
+import { INJECT_PARAMS_METADATA } from "./decorators.js";
+import type { Constructor } from "../common/types.js";
 
 /**
  * Interface cho việc resolve các services.

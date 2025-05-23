@@ -1,11 +1,10 @@
-import { ServiceDescriptor } from "./service-descriptor";
-import { ServiceLifetime } from "./service-lifetime";
-import { Constructor } from "../common/types";
-import { IServiceProvider } from "./service-provider";
+import { ServiceDescriptor } from "./service-descriptor.js";
+import { ServiceLifetime } from "./service-lifetime.js";
+import type { Constructor } from "../common/types.js";
+import type { IServiceProvider } from "./service-provider.js";
 
 /**
  * Interface cho việc đăng ký các services.
- * Tương tự IServiceCollection trong Microsoft.Extensions.DependencyInjection.
  */
 export interface IServiceCollection {
   add(descriptor: ServiceDescriptor): void;

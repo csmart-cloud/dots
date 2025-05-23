@@ -1,5 +1,5 @@
 import "reflect-metadata";
-import { ServiceLifetime } from "./service-lifetime";
+import { ServiceLifetime } from "./service-lifetime.js";
 
 export const INJECTABLE_METADATA = Symbol("Injectable");
 export const INJECT_PARAMS_METADATA = Symbol("InjectParams");

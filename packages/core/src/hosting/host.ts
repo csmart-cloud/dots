@@ -1,4 +1,4 @@
-import { IServiceProvider } from "../di/service-provider";
+import type { IServiceProvider } from "../di/service-provider.js";
 
 export interface IHost {
   readonly services: IServiceProvider;

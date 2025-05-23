@@ -1,6 +1,6 @@
-import { ServiceLifetime } from "./service-lifetime";
-import { Constructor } from "../common/types";
-import { IServiceProvider } from "./service-provider";
+import { ServiceLifetime } from "./service-lifetime.js";
+import type { Constructor } from "../common/types.js";
+import type { IServiceProvider } from "./service-provider.js";
 
 /**
  * Mô tả một service đã được đăng ký.
