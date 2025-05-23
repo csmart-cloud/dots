@@ -1,0 +1,21 @@
+{
+  "name": "dots",
+  "private": true,
+  "scripts": {
+    "build": "npx turbo run build",
+    "dev": "npx turbo run dev",
+    "lint": "npx turbo run lint",
+    "format": "npx prettier --write \"**/*.{ts,tsx,md}\"",
+    "check-types": "npx turbo run check-types"
+  },
+  "devDependencies": {
+    "kill-port": "^2.0.1",
+    "prettier": "^3.5.3",
+    "turbo": "^2.5.3",
+    "typescript": "5.8.2"
+  },
+  "packageManager": "pnpm@9.0.0",
+  "engines": {
+    "node": ">=18"
+  }
+}

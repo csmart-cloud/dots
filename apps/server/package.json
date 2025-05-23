@@ -1,0 +1,21 @@
+{
+  "name": "@dots/server",
+  "type": "module",
+  "scripts": {
+    "dev": "kill-port 5000 && tsx watch src/main.ts",
+    "build": "tsc",
+    "start": "node dist/main.js"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.14.2",
+    "@dots/core": "workspace:*",
+    "@dots/shared": "workspace:*",
+    "@dots/types": "workspace:*",
+    "hono": "^4.7.10"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.17",
+    "tsx": "^4.7.1",
+    "typescript": "^5.8.3"
+  }
+}
