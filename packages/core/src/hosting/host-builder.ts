@@ -93,7 +93,10 @@ export class DefaultHostBuilder implements IHostBuilder {
     let controllersToValidate: Constructor<ControllerBase>[] = [];
 
     if (this.startupInstance && this.startupInstance.configure) {
-      const result = this.startupInstance.configure(appBuilder, rootServiceProvider);
+      const result = this.startupInstance.configure(
+        appBuilder,
+        rootServiceProvider
+      );
       if (Array.isArray(result)) {
         controllersToValidate = result;
       }
@@ -155,6 +158,7 @@ export class DefaultHostBuilder implements IHostBuilder {
         // SỬA LỖI #5, #6: Dùng cờ isSent thay cho headersSent.
         // Nếu response chưa được gửi bởi pipeline, Hono sẽ tự động xử lý (thường là trả 404).
         if (!httpContext.response.isSent) {
+          console.log("Response not sent by pipeline. Letting Hono handle it.");
           // Hono sẽ tự động xử lý not found nếu không có handler nào trả về response.
           // Không cần làm gì thêm ở đây.
         }

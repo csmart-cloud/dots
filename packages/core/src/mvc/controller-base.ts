@@ -29,7 +29,8 @@ export abstract class ControllerBase {
   }
 
   protected ok(data?: any): OkObjectResult | OkResult {
-    return data === undefined ? new OkResult() : new OkObjectResult(data);
+    const response = data === undefined ? new OkResult() : new OkObjectResult(data);
+    return response
   }
 
   protected notFound(data?: any): NotFoundObjectResult | NotFoundResult {

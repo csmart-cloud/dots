@@ -1,19 +1,35 @@
-import 'reflect-metadata'
+import "reflect-metadata";
 import {
   type IStartup,
   type IServiceCollection,
   type IApplicationBuilder,
   type IServiceProvider,
   DefaultHostBuilder,
+  ServiceLifetime,
 } from "@dots/core";
 import { IdentityService } from "./services/identity.service.js";
 import { IdentityController } from "./controllers/identity.controller.js";
 import { ControllerBase } from "@dots/core";
+import { createAppLogger, type LoggerOptions } from "@dots/core";
+import { ILogger } from "@dots/core";
 import type { Constructor } from "@dots/core";
 
 class Startup implements IStartup {
   configureServices(services: IServiceCollection): void {
     console.log("Startup: Configuring services...");
+
+    services.addFactory<ILogger>(
+      ILogger,
+      (_) => {
+        const loggerOptions: LoggerOptions = {
+          level: "debug",
+          consoleLogLevel: "info",
+        };
+        return createAppLogger(loggerOptions);
+      },
+      ServiceLifetime.Singleton
+    );
+
     // Register services and controllers
     // ITodoService is a symbol, TodoService is the concrete class
     services.addScoped(IdentityService);
@@ -28,7 +44,13 @@ class Startup implements IStartup {
     hostServices: IServiceProvider
   ): Constructor<ControllerBase>[] {
     console.log("Startup: Configuring application pipeline...");
-    // Example of a simple logging middleware
+
+    app.useCors({
+      origin: "*",
+      methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+      allowedHeaders: ["Content-Type", "Authorization"],
+      optionsSuccessStatus: 204,
+    });
     app.use(async (context, next) => {
       const start = Date.now();
       console.log(

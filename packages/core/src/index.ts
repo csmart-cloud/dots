@@ -17,6 +17,9 @@ export * from "./http/http-method.js";
 export * from "./http/http-request.js";
 export * from "./http/http-response.js";
 
+export * from "./logging/logger.interface.js";
+export * from "./logging/winston.config.js";
+
 export * from "./mvc/action-results.js";
 export * from "./mvc/controller-base.js";
 

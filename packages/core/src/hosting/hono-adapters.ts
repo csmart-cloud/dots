@@ -78,23 +78,29 @@ export class HonoHttpRequestAdapter implements IHttpRequest {
 
 export class HonoHttpResponseAdapter implements IHttpResponse {
   private _statusCode: number = 200;
-  private _isSent = false; // SỬA LỖI: Thêm cờ isSent
+  private _isSent = false;
+  // private honoContext: HonoContext; // Không cần lưu trữ riêng nếu truyền vào constructor
 
   get isSent(): boolean {
     return this._isSent;
   }
 
-  constructor(private c: HonoContext) {}
+  constructor(private c: HonoContext) {
+    // Nhận HonoContext trực tiếp
+    // this.honoContext = c; // Không cần gán nếu dùng this.c trực tiếp
+  }
 
   get statusCode(): number {
     return this._statusCode;
   }
   set statusCode(value: number) {
     this._statusCode = value;
-    this.c.status(value as any);
+    // Không cần gọi c.status(value) ở đây nữa,
+    // vì các hàm send/json/html sẽ tạo Response với status này.
   }
 
   setHeader(name: string, value: string | number | string[]): void {
+    // Các header sẽ được áp dụng khi c.res được tạo bởi c.text, c.json, c.html
     if (Array.isArray(value)) {
       value.forEach((v) => this.c.header(name, v, { append: true }));
     } else {
@@ -104,44 +110,32 @@ export class HonoHttpResponseAdapter implements IHttpResponse {
 
   async send(data?: any): Promise<void> {
     if (this._isSent) return;
-    this.c.status(this._statusCode as any);
-    this._isSent = true;
 
-    if (data === undefined) {
-      this.c.body(null);
-      return;
-    }
-
-    if (typeof data === "string") {
-      if (!this.c.res.headers.get("Content-Type")) {
-        this.c.header("Content-Type", "text/plain; charset=utf-8");
-      }
-      this.c.body(data);
+    if (data === undefined || data === null) {
+      this.c.res = this.c.body(null, this._statusCode as any);
+    } else if (typeof data === "string") {
+      // Không cần set Content-Type ở đây nếu c.text sẽ làm
+      this.c.res = this.c.text(data, this._statusCode as any);
     } else if (Buffer.isBuffer(data)) {
-      if (!this.c.res.headers.get("Content-Type")) {
-        this.c.header("Content-Type", "application/octet-stream");
-      }
-      this.c.body(data);
+      // Không cần set Content-Type ở đây nếu c.body với Buffer sẽ làm
+      this.c.res = this.c.body(data, this._statusCode as any);
     } else {
-      if (!this.c.res.headers.get("Content-Type")) {
-        this.c.header("Content-Type", "application/json; charset=utf-8");
-      }
-      this.c.json(data);
+      // object, array, etc. -> default to JSON
+      this.c.res = this.c.json(data, this._statusCode as any);
     }
+    this._isSent = true;
   }
 
   async json(data: any): Promise<void> {
     if (this._isSent) return;
-    this.c.status(this._statusCode as any);
+    this.c.res = this.c.json(data, this._statusCode as any);
     this._isSent = true;
-    this.c.json(data);
   }
 
   async html(htmlContent: string): Promise<void> {
     if (this._isSent) return;
-    this.c.status(this._statusCode as any);
+    this.c.res = this.c.html(htmlContent, this._statusCode as any);
     this._isSent = true;
-    this.c.html(htmlContent);
   }
 
   status(code: number): IHttpResponse {

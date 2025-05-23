@@ -13,11 +13,16 @@ import type { IServiceProvider } from "../di/service-provider.js";
 import type { RouteData } from "../routing/routing-interfaces.js";
 import type { IActionResult } from "../mvc/action-results.js";
 import type { Constructor } from "../common/types.js";
+import {
+  createCorsMiddleware,
+  type CorsOptions,
+} from "../middleware/cors.middleware.js";
 
 export interface IApplicationBuilder {
   use(middleware: Middleware): IApplicationBuilder;
   build(): (context: IHttpContext) => Promise<void>;
   useRouting(controllers: Constructor<ControllerBase>[]): IApplicationBuilder;
+  useCors(options?: CorsOptions): IApplicationBuilder;
 }
 
 export class DefaultApplicationBuilder implements IApplicationBuilder {
@@ -28,6 +33,11 @@ export class DefaultApplicationBuilder implements IApplicationBuilder {
 
   use(middleware: Middleware): IApplicationBuilder {
     this.middlewares.push(middleware);
+    return this;
+  }
+
+  useCors(options?: CorsOptions): IApplicationBuilder {
+    this.use(createCorsMiddleware(options));
     return this;
   }
 
@@ -277,7 +287,6 @@ export class DefaultApplicationBuilder implements IApplicationBuilder {
         "$";
       const routeRegex = new RegExp(routeRegexPattern);
 
-      // SỬA LỖI #4: Loại bỏ ternary operator không hợp lệ
       const match = normalizedRequestPath.match(routeRegex);
 
       if (match) {
@@ -295,9 +304,7 @@ export class DefaultApplicationBuilder implements IApplicationBuilder {
     let app: (context: IHttpContext) => Promise<void> = async (_context) => {
       if (!_context.response.isSent) {
         _context.response.statusCode = 404;
-        await _context.response.send(
-          "Not Found fallback."
-        );
+        await _context.response.send("Not Found fallback.");
       }
     };
 

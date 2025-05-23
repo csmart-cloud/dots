@@ -1,7 +1,7 @@
 import { type IHttpContext } from "../http/http-context.js";
 
 export interface IActionResult {
-  executeResult(context: IHttpContext): Promise<void> | void;
+  executeResult(context: IHttpContext): void;
 }
 
 export class JsonResult implements IActionResult {
@@ -10,9 +10,9 @@ export class JsonResult implements IActionResult {
     private _statusCode: number = 200
   ) {}
 
-  async executeResult(context: IHttpContext): Promise<void> {
+  executeResult(context: IHttpContext): void {
     context.response.statusCode = this._statusCode;
-    await context.response.json(this.data);
+    context.response.json({ data: this.data });
   }
 }
 
