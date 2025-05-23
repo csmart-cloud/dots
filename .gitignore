@@ -33,9 +33,9 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Lock files
-pnpm-lock.yaml
-
 # Misc
 .DS_Store
 *.pem
+
+# Rules
+memory-bank
