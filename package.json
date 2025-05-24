@@ -3,6 +3,8 @@
   "private": true,
   "scripts": {
     "build": "npx turbo run build",
+    "build:server": "npx turbo run build --filter=server",
+    "build:web": "npx turbo run build --filter=web",
     "dev": "npx turbo run dev",
     "dev:server": "npx turbo dev --filter=server",
     "dev:web": "npx turbo dev --filter=web",

@@ -2,15 +2,20 @@
   "name": "server",
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/index.ts",
-    "build": "tsc",
-    "start": "node dist/index.js"
+    "dev": "tsx watch src/main.ts",
+    "build": "tsc && webpack --config webpack.cjs",
+    "start": "node dist/main.js"
   },
   "dependencies": {
+    "@babel/preset-env": "^7.27.2",
+    "@dots/shared": "workspace:*",
+    "@dots/types": "workspace:*",
     "@hono/node-server": "^1.14.2",
+    "babel-loader": "^10.0.0",
     "hono": "^4.7.10",
-    "shared": "^0.2.0",
-    "types": "^0.1.1"
+    "terser-webpack-plugin": "^5.3.14",
+    "webpack-cli": "^6.0.1",
+    "webpack-node-externals": "^3.0.0"
   },
   "devDependencies": {
     "@types/node": "^20.11.17",
