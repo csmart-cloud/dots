@@ -1,13 +1,42 @@
 import "reflect-metadata";
 import { ServiceLifetime } from "./service-lifetime.js";
+import type { Constructor } from "../common/types.js";
 
+/**
+ * Metadata key for marking a class as injectable.
+ */
 export const INJECTABLE_METADATA = Symbol("Injectable");
+
+/**
+ * Metadata key for constructor parameter injection.
+ */
 export const INJECT_PARAMS_METADATA = Symbol("InjectParams");
+
+/**
+ * Metadata key for property injection.
+ */
 export const INJECT_PROPERTY_METADATA = Symbol("InjectProperty");
 
-interface InjectableOptions {
+/**
+ * Options for the Injectable decorator.
+ */
+export interface InjectableOptions {
+  /**
+   * The lifetime of the service (defaults to Transient).
+   */
   lifetime?: ServiceLifetime;
+  
+  /**
+   * Optional token to register the service as.
+   * If not provided, the class itself will be used as the token.
+   */
+  token?: any;
 }
+
+/**
+ * Marks a class as injectable, allowing it to be resolved through dependency injection.
+ * @param options Options for configuring the injectable service
+ */
 export function Injectable(options?: InjectableOptions): ClassDecorator {
   return function (target: Function) {
     Reflect.defineMetadata(
@@ -18,6 +47,10 @@ export function Injectable(options?: InjectableOptions): ClassDecorator {
   };
 }
 
+/**
+ * Specifies the dependency to inject into a constructor parameter or property.
+ * @param token The dependency token to inject
+ */
 export function Inject(token: any): ParameterDecorator & PropertyDecorator {
   return function (
     target: Object,
@@ -25,6 +58,7 @@ export function Inject(token: any): ParameterDecorator & PropertyDecorator {
     parameterIndex?: number
   ) {
     if (typeof parameterIndex === "number") {
+      // Constructor parameter injection
       const existingInjectedParams: any[] =
         Reflect.getOwnMetadata(INJECT_PARAMS_METADATA, target) || [];
       existingInjectedParams[parameterIndex] = token;
@@ -34,7 +68,8 @@ export function Inject(token: any): ParameterDecorator & PropertyDecorator {
         target
       );
     } else {
-      const properties =
+      // Property injection
+      const properties: Record<string | symbol, any> =
         Reflect.getOwnMetadata(INJECT_PROPERTY_METADATA, target.constructor) ||
         {};
       properties[propertyKey!] = token;
@@ -43,9 +78,30 @@ export function Inject(token: any): ParameterDecorator & PropertyDecorator {
         properties,
         target.constructor
       );
-      console.warn(
-        `@Inject for property ${String(propertyKey)} is noted, but property injection is not yet fully supported by DefaultServiceProvider.`
-      );
     }
   };
+}
+
+/**
+ * Decorator factory that allows a class to be registered with a specific lifetime.
+ * @param lifetime The service lifetime
+ */
+export function Singleton(): ClassDecorator {
+  return Injectable({ lifetime: ServiceLifetime.Singleton });
+}
+
+/**
+ * Decorator factory that allows a class to be registered with Scoped lifetime.
+ * @param lifetime The service lifetime
+ */
+export function Scoped(): ClassDecorator {
+  return Injectable({ lifetime: ServiceLifetime.Scoped });
+}
+
+/**
+ * Decorator factory that allows a class to be registered with Transient lifetime.
+ * @param lifetime The service lifetime
+ */
+export function Transient(): ClassDecorator {
+  return Injectable({ lifetime: ServiceLifetime.Transient });
 }

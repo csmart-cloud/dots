@@ -4,7 +4,7 @@ import {
   type IServiceCollection,
   DefaultServiceCollection,
 } from "../di/service-collection.js";
-import type { IHost } from "./host.js";
+import type { IHost, HostInfo } from "./host.js";
 import {
   type IApplicationBuilder,
   DefaultApplicationBuilder,
@@ -50,7 +50,12 @@ export class DefaultHostBuilder implements IHostBuilder {
     hostServices: IServiceProvider
   ) => void)[] = [];
   private startupInstance?: IStartup;
-  private startupValidationEnabled: boolean = true; // Thêm cờ cho validation. Mặc định là bật
+  /**
+   * Flag to enable validation of startup services
+   * Checks if controllers and their dependencies can be resolved from the DI container
+   * Default is true
+   */
+  private startupValidationEnabled: boolean = true;
 
   constructor() {}
 
@@ -110,13 +115,13 @@ export class DefaultHostBuilder implements IHostBuilder {
     if (this.startupValidationEnabled && controllersToValidate.length > 0) {
       console.log("Performing startup DI validation...");
       try {
-        // Tạo một scope tạm thời để resolve các service scoped (như controllers)
+        // Create a temporary scope to resolve scoped services (like controllers)
         const validationScope = rootServiceProvider.createScope();
         controllersToValidate.forEach((controller) => {
           console.log(`  - Validating controller: ${controller.name}`);
           const instance = validationScope.getService(controller);
           if (!instance) {
-            // Mặc dù getService sẽ ném lỗi trước đó, đây là một bước kiểm tra dự phòng
+            // This is a fallback check, as getService should throw an error if the service can't be resolved
             throw new Error(
               `Failed to resolve controller "${controller.name}". It might not be registered correctly.`
             );
@@ -127,7 +132,7 @@ export class DefaultHostBuilder implements IHostBuilder {
         );
       } catch (error) {
         console.error("DI validation failed. Application will not start.");
-        // Ném lỗi ra ngoài để dừng hoàn toàn quá trình khởi động
+        // Throw the error to stop the startup process completely
         throw error;
       }
     } else if (this.startupValidationEnabled) {
@@ -176,11 +181,18 @@ export class DefaultHostBuilder implements IHostBuilder {
     });
 
     let serverInstance: any;
+    const port = Number(process.env.PORT) || 5000;
+    const environment = process.env.NODE_ENV || 'development';
 
     const nodeHttpHost: IHost = {
       services: rootServiceProvider,
+      info: {
+        environment,
+        port,
+        address: `http://localhost:${port}`
+      },
       start: async () => {
-        // Kết nối MongoDB khi host start
+        // Connect to MongoDB when the host starts
         const mongoService =
           rootServiceProvider.getService<IMongoConnectionService>(
             IMongoConnectionService
@@ -194,8 +206,9 @@ export class DefaultHostBuilder implements IHostBuilder {
               "Failed to connect to MongoDB during host startup. Application might not function correctly.",
               dbError
             );
-            // Quyết định có nên dừng ứng dụng ở đây không tùy thuộc vào yêu cầu
-            // throw dbError; // Ném lỗi để dừng hoàn toàn nếu DB là bắt buộc
+            // Decision whether to stop the application depends on requirements
+            // Uncomment the next line to stop the application if MongoDB is required
+            // throw dbError; 
           }
         } else {
           const logger = rootServiceProvider.getService<ILogger>(ILogger);
@@ -204,14 +217,16 @@ export class DefaultHostBuilder implements IHostBuilder {
           );
         }
 
-        const port = Number(process.env.PORT) || 5000;
         serverInstance = serve(
           {
             fetch: honoApp.fetch,
-            port: port,
+            port: nodeHttpHost.info.port,
           },
           (info) => {
-            console.log(`Host is running on http://localhost:${info.port}`);
+            // Update the host info with actual startup information
+            (nodeHttpHost.info as HostInfo).startedAt = new Date();
+            (nodeHttpHost.info as HostInfo).port = info.port;
+            console.log(`Host is running on ${nodeHttpHost.info.address}`);
           }
         );
       },

@@ -1,16 +1,42 @@
 import "reflect-metadata";
 import { ServiceDescriptor } from "./service-descriptor.js";
 import { ServiceLifetime } from "./service-lifetime.js";
-import { INJECT_PARAMS_METADATA } from "./decorators.js";
+import { INJECT_PARAMS_METADATA, INJECT_PROPERTY_METADATA } from "./decorators.js";
 import type { Constructor } from "../common/types.js";
 
 /**
- * Interface cho việc resolve các services.
- * Tương tự IServiceProvider trong Microsoft.Extensions.DependencyInjection.
+ * Interface for resolving services from the dependency injection container.
+ * Similar to IServiceProvider in Microsoft.Extensions.DependencyInjection.
  */
 export interface IServiceProvider {
+  /**
+   * Gets a service of the specified type.
+   * @param serviceType The type or token of the service to get
+   * @returns The service instance, or null if the service is not registered
+   */
   getService<T>(serviceType: Constructor<T> | symbol | string): T | null;
+  
+  /**
+   * Creates a new scope from this service provider.
+   * @returns A new scoped service provider
+   */
   createScope(): IServiceProvider;
+  
+  /**
+   * Attempts to get a service of the specified type from the service provider.
+   * @param serviceType The type or token of the service to get
+   * @param defaultValue A default value to return if the service is not found
+   * @returns The service instance, or the default value if not found
+   */
+  getServiceOrDefault<T>(serviceType: Constructor<T> | symbol | string, defaultValue: T): T;
+  
+  /**
+   * Gets a required service of the specified type from the service provider.
+   * @param serviceType The type or token of the service to get
+   * @returns The service instance
+   * @throws If the service is not registered
+   */
+  getRequiredService<T>(serviceType: Constructor<T> | symbol | string): T;
 }
 
 export class DefaultServiceProvider implements IServiceProvider {
@@ -36,6 +62,11 @@ export class DefaultServiceProvider implements IServiceProvider {
     }
   }
 
+  /**
+   * Gets a service of the specified type.
+   * @param serviceType The type or token of the service to get
+   * @returns The service instance, or null if the service is not registered
+   */
   getService<T>(serviceType: Constructor<T> | symbol | string): T | null {
     const descriptor = this.descriptors.find(
       (d) => d.serviceType === serviceType
@@ -52,16 +83,16 @@ export class DefaultServiceProvider implements IServiceProvider {
       switch (descriptor.lifetime) {
         case ServiceLifetime.Singleton:
           const rootProvider = this.parentScopeProvider || this;
-          // Sửa lỗi nhỏ: Phải getService từ rootProvider, không phải this.getService() nếu this là scope
+          // Must get service from the root provider for singletons
           if (rootProvider === this) {
-            // Nếu this là root provider
+            // If this is the root provider
             if (!this.singletonInstances.has(serviceType)) {
               const instance = this.createInstance(descriptor, this);
               this.singletonInstances.set(serviceType, instance);
             }
             return this.singletonInstances.get(serviceType) as T;
           } else {
-            // Nếu this là scope provider, delegate cho root
+            // If this is a scoped provider, delegate to root
             return rootProvider.getService(serviceType);
           }
 
@@ -90,10 +121,55 @@ export class DefaultServiceProvider implements IServiceProvider {
       );
     }
   }
+  
+  /**
+   * Attempts to get a service of the specified type from the service provider.
+   * @param serviceType The type or token of the service to get
+   * @param defaultValue A default value to return if the service is not found
+   * @returns The service instance, or the default value if not found
+   */
+  getServiceOrDefault<T>(serviceType: Constructor<T> | symbol | string, defaultValue: T): T {
+    const service = this.getService<T>(serviceType);
+    return service !== null ? service : defaultValue;
+  }
+  
+  /**
+   * Gets a required service of the specified type from the service provider.
+   * @param serviceType The type or token of the service to get
+   * @returns The service instance
+   * @throws If the service is not registered
+   */
+  getRequiredService<T>(serviceType: Constructor<T> | symbol | string): T {
+    const service = this.getService<T>(serviceType);
+    if (service === null) {
+      const serviceName =
+        typeof serviceType === "function"
+          ? serviceType.name
+          : String(serviceType);
+      throw new Error(
+        `No service for type "${serviceName}" has been registered.`
+      );
+    }
+    return service;
+  }
 
+  /**
+   * Creates a new scope from this service provider.
+   * @returns A new scoped service provider
+   */
+  createScope(): IServiceProvider {
+    return new DefaultServiceProvider(this.descriptors, this);
+  }
+
+  /**
+   * Creates an instance of a service using its descriptor.
+   * @param descriptor The service descriptor
+   * @param resolvingProvider The provider used to resolve dependencies
+   * @returns The created instance
+   */
   private createInstance(
     descriptor: ServiceDescriptor,
-    resolvingProvider: IServiceProvider = this
+    resolvingProvider: IServiceProvider
   ): any {
     if (descriptor.implementationInstance) {
       return descriptor.implementationInstance;
@@ -104,48 +180,39 @@ export class DefaultServiceProvider implements IServiceProvider {
     }
 
     if (descriptor.implementationType) {
-      const constructorFunc = descriptor.implementationType; // Đổi tên biến để tránh nhầm lẫn
+      const constructorFunc = descriptor.implementationType;
 
-      // SỬA LỖI QUAN TRỌNG: Kiểm tra metadata và số lượng tham số thực tế
+      // Check metadata and actual parameter count
       const actualParamsLength = constructorFunc.length;
       const designParamTypes: Constructor[] =
         Reflect.getMetadata("design:paramtypes", constructorFunc) || [];
       const injectedParamTokens: (Constructor | symbol | string)[] =
         Reflect.getOwnMetadata(INJECT_PARAMS_METADATA, constructorFunc) || [];
 
-      // Nếu constructor có tham số nhưng không lấy được metadata kiểu
-      // VÀ cũng không có đủ @Inject token, thì đó là lỗi
+      // If constructor has parameters but we couldn't get metadata types
+      // AND we don't have enough @Inject tokens, that's a potential error
       if (
         actualParamsLength > 0 &&
         designParamTypes.length === 0 &&
         injectedParamTokens.filter((t) => t !== undefined).length <
           actualParamsLength
       ) {
-        console.error(
+        console.warn(
           `DI Warning: Reflect.getMetadata("design:paramtypes", ${constructorFunc.name}) returned an empty array or insufficient types.`
         );
-        console.error(
+        console.warn(
           `  This usually means 'emitDecoratorMetadata' is not true in tsconfig.json, 'reflect-metadata' is not imported early enough, or there's a circular dependency.`
         );
-        console.error(
+        console.warn(
           `  Constructor for ${constructorFunc.name} expects ${actualParamsLength} arguments.`
         );
-        // Ném lỗi ở đây nếu muốn chặt chẽ hơn, hoặc cố gắng tiếp tục nếu có injectedParamTokens
-        // Hiện tại, chúng ta sẽ để vòng lặp map xử lý và ném lỗi nếu token không xác định được.
       }
 
-      // Nếu designParamTypes rỗng nhưng constructor thực sự có tham số,
-      // và không có đủ injectedParamTokens, chúng ta cần cẩn thận.
-      // Logic hiện tại sẽ cố gắng resolve dựa trên injectedParamTokens trước, sau đó là designParamTypes.
-      // Số lượng params cần resolve phải dựa trên số lượng tham số thực tế của constructor,
-      // hoặc số lượng lớn nhất giữa designParamTypes và injectedParamTokens nếu có.
-      // Tuy nhiên, nếu designParamTypes rỗng, việc map nó sẽ không làm gì cả.
-      // Chúng ta cần một mảng để lặp có độ dài bằng số tham số thực tế của constructor.
-
+      // Resolve constructor parameters
       const params: any[] = [];
       for (let i = 0; i < actualParamsLength; i++) {
-        const designParamType = designParamTypes[i]; // Có thể là undefined nếu designParamTypes rỗng
-        const injectedToken = injectedParamTokens[i]; // Có thể là undefined
+        const designParamType = designParamTypes[i]; // May be undefined if designParamTypes is empty
+        const injectedToken = injectedParamTokens[i]; // May be undefined
         const injectionToken = injectedToken || designParamType;
 
         if (!injectionToken) {
@@ -167,14 +234,51 @@ export class DefaultServiceProvider implements IServiceProvider {
         }
         params.push(dependency);
       }
-      return new constructorFunc(...params);
+      
+      // Create the instance
+      const instance = new constructorFunc(...params);
+      
+      // Handle property injection
+      this.injectProperties(instance, constructorFunc, resolvingProvider);
+      
+      return instance;
     }
     throw new Error(
       `Cannot create instance for service type: ${String(descriptor.serviceType)}`
     );
   }
-
-  createScope(): IServiceProvider {
-    return new DefaultServiceProvider(this.descriptors, this);
+  
+  /**
+   * Injects dependencies into object properties based on metadata.
+   * @param instance The object instance to inject properties into
+   * @param constructor The constructor function of the instance
+   * @param resolvingProvider The provider to resolve dependencies from
+   */
+  private injectProperties(instance: any, constructor: Constructor, resolvingProvider: IServiceProvider): void {
+    const propertyInjections = Reflect.getOwnMetadata(INJECT_PROPERTY_METADATA, constructor) as Record<string | symbol, any>;
+    
+    if (!propertyInjections) {
+      return;
+    }
+    
+    for (const propertyKey in propertyInjections) {
+      const token = propertyInjections[propertyKey];
+      
+      try {
+        const dependency = resolvingProvider.getService(token);
+        
+        if (dependency === null) {
+          const tokenName = typeof token === "function" ? token.name : String(token);
+          console.warn(`Property injection failed for property ${String(propertyKey)} in ${constructor.name}. Service not found for token: ${tokenName}`);
+          continue;
+        }
+        
+        instance[propertyKey] = dependency;
+      } catch (error: any) {
+        console.warn(
+          `Property injection failed for property ${String(propertyKey)} in ${constructor.name}: ${error.message}`
+        );
+      }
+    }
   }
 }
