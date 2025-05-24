@@ -1,5 +1,8 @@
 export * from "./common/types.js";
 
+export * from "./database/mongoose/mongo-connection.service.js";
+export * from "./database/mongoose/mongoose.types.js";
+
 export * from "./di/decorators.js";
 export * from "./di/service-collection.js";
 export * from "./di/service-descriptor.js";

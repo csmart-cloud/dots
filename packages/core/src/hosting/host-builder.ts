@@ -22,6 +22,8 @@ import {
   HonoHttpResponseAdapter,
 } from "./hono-adapters.js";
 import type { ControllerBase } from "../mvc/controller-base.js";
+import { IMongoConnectionService } from "../database/mongoose/mongo-connection.service.js";
+import { ILogger } from "../logging/logger.interface.js";
 
 export interface IHostBuilder {
   configureServices(
@@ -178,6 +180,30 @@ export class DefaultHostBuilder implements IHostBuilder {
     const nodeHttpHost: IHost = {
       services: rootServiceProvider,
       start: async () => {
+        // Kết nối MongoDB khi host start
+        const mongoService =
+          rootServiceProvider.getService<IMongoConnectionService>(
+            IMongoConnectionService
+          );
+        if (mongoService) {
+          try {
+            await mongoService.connect();
+          } catch (dbError) {
+            const logger = rootServiceProvider.getService<ILogger>(ILogger);
+            logger?.error(
+              "Failed to connect to MongoDB during host startup. Application might not function correctly.",
+              dbError
+            );
+            // Quyết định có nên dừng ứng dụng ở đây không tùy thuộc vào yêu cầu
+            // throw dbError; // Ném lỗi để dừng hoàn toàn nếu DB là bắt buộc
+          }
+        } else {
+          const logger = rootServiceProvider.getService<ILogger>(ILogger);
+          logger?.warn(
+            "MongoConnectionService not found in DI container. MongoDB will not be connected."
+          );
+        }
+
         const port = Number(process.env.PORT) || 5000;
         serverInstance = serve(
           {
