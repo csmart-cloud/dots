@@ -10,9 +10,7 @@
     ],
     "jsx": "react-jsx",
     "jsxImportSource": "hono/jsx",
-    "outDir": "./dist",
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": true
+    "outDir": "./dist"
   },
   "exclude": ["node_modules"]
 }
